@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fibo Quiz Test</title>
+  <style>
+    body { background: #fff; }
+    #answer-box {
+      display: none;
+      margin: 35px auto 0 auto;
+      width: 330px;
+      padding: 20px;
+      border: 2px dashed #3480d4;
+      background: #f3faff;
+      text-align: center;
+      border-radius: 10px;
+      font-size: 18px;
+    }
+    #answer-box .result { font-weight: bold; font-size: 20px; margin-top:10px; }
+  </style>
+</head>
+<body>
+<div style="position:relative; width:600px; height:451px; margin:auto; margin-top:60px;">
+  <img src="quiz1.png" style="position:absolute;top:0;left:0;width:600px;height:451px;z-index:1;">
+  <canvas id="quiz1canvas" width="600" height="451"
+    style="position:absolute;top:0;left:0;width:600px;height:451px;z-index:2; background:rgba(0,150,255,0.08); border:2px solid red; cursor:crosshair;">
+  </canvas>
+</div>
+<!-- กล่องตรวจคำตอบ -->
+<div id="answer-box">
+  <div>กดปุ่มเพื่อตรวจสอบคำตอบของคุณ</div>
+  <button id="checkAnswerBtn" style="font-size:16px; padding:8px 30px; margin:15px 0 0 0;">ส่งคำตอบ</button>
+  <div class="result"></div>
+</div>
+<script>
+const canvas = document.getElementById('quiz1canvas');
+const answerBox = document.getElementById('answer-box');
+const resultDiv = answerBox.querySelector('.result');
+const checkBtn = document.getElementById('checkAnswerBtn');
+
+let isDrawing = false, startX = 0, startY = 0, endX = 0, endY = 0;
+let isFinishedDraw = false;
+
+if (canvas) {
+  const ctx = canvas.getContext('2d');
+
+  canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+    isDrawing = true;
+    isFinishedDraw = false;
+    answerBox.style.display = "none";
+    resultDiv.textContent = '';
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    endX = e.clientX - rect.left;
+    endY = e.clientY - rect.top;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = 'red'; ctx.lineWidth = 2; ctx.stroke();
+  });
+
+  canvas.addEventListener('mouseup', e => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    isFinishedDraw = true;
+    const rect = canvas.getBoundingClientRect();
+    endX = e.clientX - rect.left;
+    endY = e.clientY - rect.top;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // วาดเส้นแดง
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // ==== วาดเส้นฟิโบ ====
+    const fibo_levels = [0, 0.236, 0.382, 0.5, 0.618, 1, 1.272, 1.618, 2, 2.618, 4.236];
+    const minY = Math.min(startY, endY);
+    const maxY = Math.max(startY, endY);
+    fibo_levels.forEach(level => {
+        const y = maxY - (maxY - minY) * level;
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "navy";
+        ctx.font = "14px Arial";
+        ctx.fillText((level*100).toFixed(1) + "%", endX + 5, y - 3);
+    });
+
+    // แสดงกล่องกดส่งคำตอบ
+    answerBox.style.display = "block";
+    resultDiv.textContent = '';
+  });
+
+  checkBtn.onclick = function() {
+    if(!isFinishedDraw) {
+      resultDiv.textContent = "กรุณาลากเส้นก่อน แล้วค่อยมายืนยัน!";
+      resultDiv.style.color = "#a00";
+      return;
+    }
+    // ===== เฉลย ตรงนี้ =====
+    const targetX = 115.5;
+    const targetY = 381;
+    const margin = 20;
+    const diffX = Math.abs(endX - targetX);
+    const diffY = Math.abs(endY - targetY);
+
+    if (diffX <= margin && diffY <= margin) {
+      resultDiv.innerHTML = "<span style='color:#237b13'>เก่งมากครับ :) นี่คือชุดฟอร์มสมบูรณ์ต้นรอบครับ</span>";
+    } else {
+      resultDiv.innerHTML = "<span style='color:#c00'>ยังไม่ถูกครับลองใหม่นะครับ ^^</span>";
+    }
+  }
+}
+</script>
+</body>
+</html>
