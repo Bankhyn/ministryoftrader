@@ -315,10 +315,15 @@ canvas.addEventListener('click', e => {
 
 // ---------- ตรวจและ step ต่อไป ----------
 function isCorrect(line, answer) {
-  const marginY = 30; // ยอมผิดแนว y ได้นิดหน่อยเท่านั้น
+  const marginY = 30; // คลาดเคลื่อน y ที่ยอมให้ (horizontal level)
+  const marginX = 100; // คลาด x กว้างมาก ๆ เลย หรือไม่เช็คเลยก็ได้
+
   return (
     Math.abs(line.y1 - answer.y1) < marginY &&
     Math.abs(line.y2 - answer.y2) < marginY
+    // สำหรับ x: ยอมได้เกือบหมด (หรือไม่ต้องเช็คเลย)
+    // Math.abs(line.x1 - answer.x1) < marginX &&
+    // Math.abs(line.x2 - answer.x2) < marginX
   );
 }
 
