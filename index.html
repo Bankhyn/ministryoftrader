@@ -2,133 +2,388 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Fibo Quiz Test</title>
+  <title>Multi Fibo Quiz + Vertical Line + Crosshair</title>
   <style>
     body { background: #fff; }
     #answer-box {
-      display: none;
-      margin: 35px auto 0 auto;
-      width: 330px;
-      padding: 20px;
+      display: block;
+      margin: 40px auto 0 auto;
+      width: 400px;
+      padding: 22px;
       border: 2px dashed #3480d4;
       background: #f3faff;
       text-align: center;
       border-radius: 10px;
-      font-size: 18px;
+      font-size: 22px;
     }
-    #answer-box .result { font-weight: bold; font-size: 20px; margin-top:10px; }
+    #answer-box .result { font-weight: bold; font-size: 20px; margin-top:12px; }
+    #checkAnswerBtn[disabled], #removeBtn[disabled] { opacity:0.4; cursor:not-allowed; }
+    #removeBox { margin-top:15px; }
+    #fibIndex { width:50px; font-size:18px; }
   </style>
 </head>
 <body>
-<div style="position:relative; width:600px; height:451px; margin:auto; margin-top:60px;">
-  <img src="quiz1.png" style="position:absolute;top:0;left:0;width:600px;height:451px;z-index:1;">
-  <canvas id="quiz1canvas" width="600" height="451"
-    style="position:absolute;top:0;left:0;width:600px;height:451px;z-index:2; background:rgba(0,150,255,0.08); border:2px solid red; cursor:crosshair;">
+<div style="position:relative; width:1935px; height:1123px; margin:auto; margin-top:40px;">
+  <img src="quiz1.png" style="position:absolute;top:0;left:0;width:1935px;height:1123px;z-index:1;">
+  <canvas id="quiz1canvas" width="1935" height="1123"
+    style="position:absolute;top:0;left:0;width:1935px;height:1123px;z-index:2; background:rgba(0,150,255,0.05); border:2px solid red; cursor:crosshair;">
   </canvas>
 </div>
-<!-- กล่องตรวจคำตอบ -->
 <div id="answer-box">
-  <div>กดปุ่มเพื่อตรวจสอบคำตอบของคุณ</div>
-  <button id="checkAnswerBtn" style="font-size:16px; padding:8px 30px; margin:15px 0 0 0;">ส่งคำตอบ</button>
+  <div id="question"></div>
+  <button id="checkAnswerBtn" disabled>ส่งคำตอบ</button>
+  <div id="removeBox" style="display:none;">
+    เลขฟิโบที่ต้องการลบ: <input type="number" min="1" id="fibIndex"> 
+    <button id="removeBtn">ลบฟิโบนี้</button>
+  </div>
   <div class="result"></div>
 </div>
 <script>
+const steps = [
+  {
+    question: "1. กรุณาวาดฟิโบขาลงสมบูรณ์",
+    answer: {x1: 113, y1: 191, x2: 158, y2: 129},
+    type: "down"
+  },
+  {
+    question: "2. กรุณาวาดฟิโบภูเขาลูกหลัง",
+    answer: {x1: 270, y1: 332, x2: 341, y2: 224},
+    type: "down"
+  },
+  {
+    question: "3. กรุณาตัดภูเขาเมื่อฟิโบถึงสุดทางรัก (คลิกเส้นแนวตั้ง)",
+    type: "vertical",
+    answerX: 519
+  },
+  {
+    question: "4. กรุณา ลบฟิโบที่ถึงสุดทางรักแล้ว ",
+    type: "remove",
+    removeIndex: 0
+  },
+  {
+    question: "5. กรุณาวาดฟิโบหักคอหลังจากตัดภูเขา",
+    answer: {x1: 518, y1: 501, x2: 569, y2: 398},
+    type: "down"
+  },
+  {
+    question: "6. กรุณาตัดภูเขาเมื่อชุดหักคอปิดไม่เกิน161.8 และRSI OVS มีการดีด1รอบ STOCH (คลิกเส้นแนวตั้ง)",
+    type: "vertical",
+    answerX: 583
+  },
+  {
+    question: "7. กรุณาวาดฟิโบหักคอหลังจากตัดภูเขา",
+    answer: {x1: 676, y1: 525, x2: 753, y2: 448},
+    type: "down"
+  },
+  {
+    question: "8. กรุณาวาดฟิโบภูเขาลูกหลัง(หลังจากชุดหักคอยืนยันฟิโบ)",
+    answer: {x1: 780, y1: 602, x2: 829, y2: 504},
+    type: "down"
+  },
+  {
+    question: "9. กรุณาตัดภูเขาเมื่อชุดหักคอปิดไม่เกิน161.8 และRSI OVS มีการดีด1รอบ STOCH (คลิกเส้นแนวตั้ง)",
+    type: "vertical",
+    answerX: 900
+  },
+  {
+    question: "10. กรุณา ลบฟิโบที่หักคอปิดไม่เกิน161.8 หลังจากตัดภูเขา",
+    type: "remove",
+    removeIndex: 5
+  },
+  {
+    question: "11. กรุณาวาดฟิโบชุดหักคอ(หลังจากตัดภูเขา)",
+    answer: {x1: 902, y1: 640, x2: 965, y2: 577},
+    type: "down"
+  },
+  {
+    question: "12. กรุณาตัดภูเขาเมื่อฟิโบถึงสุดทางรัก และRSI OVS (คลิกเส้นแนวตั้ง)",
+    type: "vertical",
+    answerX: 1114
+  },
+  {
+    question: "13. กรุณา ลบฟิโบที่ถึงเป้าสุดทางรักแล้ว ",
+    type: "remove",
+    removeIndex: 0
+  },
+  {
+    question: "14. กรุณา ลบฟิโบที่ถึงเป้าสุดทางรักแล้ว ",
+    type: "remove",
+    removeIndex: 1
+  },
+  {
+    question: "15. กรุณา ลบฟิโบที่ถึงเป้าสุดทางรักแล้ว ",
+    type: "remove",
+    removeIndex: 2
+  },
+  {
+    question: "15. กรุณา ลบฟิโบที่ถูกทำลาย(ขาลงชุดสุดท้าย)",
+    type: "remove",
+    removeIndex: 3
+  },
+  {
+    question: "16. กรุณาวาดฟิโบขาขึ้นสมบูรณ์ให้ถูกต้อง ",
+    answer: {x1: 1285, y1: 557, x2: 1420, y2: 645},
+    type: "up"
+  },
+  {
+    question: "17. กรุณาวาดฟิโบภูเขาลูกหลังขาขึ้นให้ถูกต้อง ",
+    answer: {x1: 1697, y1: 424, x2: 1734, y2: 508},
+    type: "up"
+  },
+];
+
+let currentStep = 0;
+let lines = [];
+let tempLine = null;
+let tempX = null;
+let crossX = null, crossY = null;
+
 const canvas = document.getElementById('quiz1canvas');
-const answerBox = document.getElementById('answer-box');
-const resultDiv = answerBox.querySelector('.result');
+const ctx = canvas.getContext('2d');
+const questionDiv = document.getElementById('question');
 const checkBtn = document.getElementById('checkAnswerBtn');
+const resultDiv = document.querySelector('.result');
+const removeBox = document.getElementById('removeBox');
+const removeBtn = document.getElementById('removeBtn');
+const fibIndexInput = document.getElementById('fibIndex');
+let isDrawing = false, startX = 0, startY = 0, endX = 0, endY = 0, isFinishedDraw = false;
 
-let isDrawing = false, startX = 0, startY = 0, endX = 0, endY = 0;
-let isFinishedDraw = false;
-
-if (canvas) {
-  const ctx = canvas.getContext('2d');
-
-  canvas.addEventListener('mousedown', e => {
-    const rect = canvas.getBoundingClientRect();
-    startX = e.clientX - rect.left;
-    startY = e.clientY - rect.top;
-    isDrawing = true;
+function showStep() {
+  questionDiv.textContent = steps[currentStep].question || "";
+  if (steps[currentStep].type === "remove") {
+    checkBtn.style.display = "none";
+    removeBox.style.display = "inline-block";
+    resultDiv.textContent = "";
     isFinishedDraw = false;
-    answerBox.style.display = "none";
-    resultDiv.textContent = '';
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-  });
+    tempLine = null;
+    tempX = null;
+    fibIndexInput.value = "";
+    removeBtn.disabled = false;
+  } else {
+    checkBtn.style.display = "inline-block";
+    removeBox.style.display = "none";
+    checkBtn.disabled = true;
+    resultDiv.textContent = "";
+    tempLine = null;
+    tempX = null;
+    isFinishedDraw = false;
+  }
+  redrawAll();
+}
 
-  canvas.addEventListener('mousemove', e => {
-    if (!isDrawing) return;
-    const rect = canvas.getBoundingClientRect();
-    endX = e.clientX - rect.left;
-    endY = e.clientY - rect.top;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(endX, endY);
-    ctx.strokeStyle = 'red'; ctx.lineWidth = 2; ctx.stroke();
-  });
-
-  canvas.addEventListener('mouseup', e => {
-    if (!isDrawing) return;
-    isDrawing = false;
-    isFinishedDraw = true;
-    const rect = canvas.getBoundingClientRect();
-    endX = e.clientX - rect.left;
-    endY = e.clientY - rect.top;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // วาดเส้นแดง
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(endX, endY);
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // ==== วาดเส้นฟิโบ ====
-    const fibo_levels = [0, 0.236, 0.382, 0.5, 0.618, 1, 1.272, 1.618, 2, 2.618, 4.236];
-    const minY = Math.min(startY, endY);
-    const maxY = Math.max(startY, endY);
+function drawFiboLine(line, idx) {
+  const fibo_levels = [0, 0.214, 0.382, 0.5, 0.618, 0.764, 1, 1.272, 1.618, 2, 2.618, 4.236];
+  let {x1, y1, x2, y2, type, color} = line;
+  if (type === "down") {
     fibo_levels.forEach(level => {
-        const y = maxY - (maxY - minY) * level;
-        ctx.beginPath();
-        ctx.moveTo(startX, y);
-        ctx.lineTo(endX, y);
-        ctx.strokeStyle = 'blue';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([5, 3]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = "navy";
-        ctx.font = "14px Arial";
-        ctx.fillText((level*100).toFixed(1) + "%", endX + 5, y - 3);
+      const y = y2 + (y1 - y2) * level;
+      ctx.beginPath();
+      ctx.moveTo(x1, y); ctx.lineTo(x2, y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.7;
+      ctx.setLineDash([7, 5]); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = "22px Arial"; ctx.fillStyle = color;
+      ctx.fillText((level * 100).toFixed(1) + "%", x2 + 12, y - 6);
     });
+  } else {
+    fibo_levels.forEach(level => {
+      const y = y2 - (y2 - y1) * level;
+      ctx.beginPath();
+      ctx.moveTo(x1, y); ctx.lineTo(x2, y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.7;
+      ctx.setLineDash([7, 5]); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = "22px Arial"; ctx.fillStyle = color;
+      ctx.fillText((level * 100).toFixed(1) + "%", x2 + 12, y - 6);
+    });
+  }
+  ctx.beginPath();
+  ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.4; ctx.setLineDash([]); ctx.stroke();
+  ctx.font = "bold 30px Arial"; ctx.fillStyle = "#444";
+  ctx.fillText(idx + 1, (x1 + x2) / 2, (y1 + y2) / 2);
+}
 
-    // แสดงกล่องกดส่งคำตอบ
-    answerBox.style.display = "block";
-    resultDiv.textContent = '';
-  });
-
-  checkBtn.onclick = function() {
-    if(!isFinishedDraw) {
-      resultDiv.textContent = "กรุณาลากเส้นก่อน แล้วค่อยมายืนยัน!";
-      resultDiv.style.color = "#a00";
-      return;
-    }
-    // ===== เฉลย ตรงนี้ =====
-    const targetX = 115.5;
-    const targetY = 381;
-    const margin = 20;
-    const diffX = Math.abs(endX - targetX);
-    const diffY = Math.abs(endY - targetY);
-
-    if (diffX <= margin && diffY <= margin) {
-      resultDiv.innerHTML = "<span style='color:#237b13'>เก่งมากครับ :) นี่คือชุดฟอร์มสมบูรณ์ต้นรอบครับ</span>";
-    } else {
-      resultDiv.innerHTML = "<span style='color:#c00'>ยังไม่ถูกครับลองใหม่นะครับ ^^</span>";
-    }
+function drawVertical(x, color, temp=false) {
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x, canvas.height);
+  ctx.strokeStyle = color || "#8000ff";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([14, 9]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (!temp) {
+    ctx.font = "bold 30px Arial";
+    ctx.fillStyle = color || "#8000ff";
+    ctx.fillText("V", x + 7, 35);
   }
 }
+
+function drawCrosshair() {
+  if (crossX != null && crossY != null) {
+    ctx.save();
+    ctx.setLineDash([4, 8]);
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    ctx.moveTo(crossX, 0); ctx.lineTo(crossX, canvas.height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, crossY); ctx.lineTo(canvas.width, crossY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+}
+
+function redrawAll() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  lines.forEach((line, i) => {
+    if (line.vertical) {
+      drawVertical(line.x, line.color, false);
+    } else {
+      drawFiboLine(line, i);
+    }
+  });
+  if (tempLine) drawFiboLine(tempLine, lines.length);
+  if (tempX != null && steps[currentStep].type === "vertical") {
+    drawVertical(tempX, "#8000ff", true);
+  }
+  drawCrosshair();
+}
+
+// MAIN EVENT mouse
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  crossX = e.clientX - rect.left;
+  crossY = e.clientY - rect.top;
+  if (isDrawing && (steps[currentStep].type === "down" || steps[currentStep].type === "up")) {
+    endX = crossX; endY = crossY;
+    tempLine = {
+      x1: startX, y1: startY, x2: endX, y2: endY,
+      type: steps[currentStep].type,
+      color: steps[currentStep].type === "down" ? "red" : "green"
+    };
+    redrawAll();
+  } else {
+    redrawAll();
+  }
+});
+canvas.addEventListener('mouseleave', () => { crossX = null; crossY = null; redrawAll(); });
+
+canvas.addEventListener('mousedown', e => {
+  if (steps[currentStep].type !== "down" && steps[currentStep].type !== "up") return;
+  const rect = canvas.getBoundingClientRect();
+  startX = e.clientX - rect.left;
+  startY = e.clientY - rect.top;
+  isDrawing = true;
+  checkBtn.disabled = true;
+  tempLine = null;
+  redrawAll();
+});
+canvas.addEventListener('mouseup', e => {
+  if (!isDrawing || (steps[currentStep].type !== "down" && steps[currentStep].type !== "up")) return;
+  isDrawing = false;
+  const rect = canvas.getBoundingClientRect();
+  endX = rect ? e.clientX - rect.left : endX;
+  endY = rect ? e.clientY - rect.top : endY;
+  tempLine = {
+    x1: startX, y1: startY, x2: endX, y2: endY,
+    type: steps[currentStep].type,
+    color: steps[currentStep].type === "down" ? "red" : "green"
+  };
+  redrawAll();
+  isFinishedDraw = true;
+  checkBtn.disabled = false;
+  console.log(`STEP ${currentStep + 1}: (${startX},${startY}) → (${endX},${endY})`);
+});
+// -- คลิกสำหรับ vertical
+canvas.addEventListener('click', e => {
+  if (steps[currentStep].type !== "vertical") return;
+  const rect = canvas.getBoundingClientRect();
+  tempX = e.clientX - rect.left;
+  redrawAll();
+  checkBtn.disabled = false;
+  isFinishedDraw = true;
+  resultDiv.textContent = "";
+  console.log(`STEP ${currentStep + 1} (VERTICAL): X = ${tempX}`);
+});
+
+// ---------- ตรวจและ step ต่อไป ----------
+function isCorrect(line, answer) {
+  const margin = 30;
+  return (
+    Math.abs(line.x1 - answer.x1) < margin &&
+    Math.abs(line.y1 - answer.y1) < margin &&
+    Math.abs(line.x2 - answer.x2) < margin &&
+    Math.abs(line.y2 - answer.y2) < margin
+  );
+}
+
+checkBtn.onclick = function() {
+  // Vertical
+  if (steps[currentStep].type === "vertical") {
+    if (tempX == null) return;
+    const margin = 20;
+    if (Math.abs(tempX - steps[currentStep].answerX) < margin) {
+      lines.push({ vertical: true, x: tempX, color: "#8000ff" });
+      tempX = null;
+      currentStep++;
+      if (currentStep < steps.length) {
+        showStep();
+      } else {
+        questionDiv.textContent = "จบทุกข้อแล้ว! คุณเก่งมาก";
+        checkBtn.disabled = true;
+        removeBox.style.display = "none";
+      }
+      resultDiv.innerHTML = `<span style="color:#237b13;">ถูกต้อง! สามารถไปข้อต่อไป</span>`;
+    } else {
+      resultDiv.innerHTML = `<span style="color:#c00;">ยังไม่ถูกต้อง ลองคลิกใหม่อีกครั้ง</span>`;
+    }
+    return;
+  }
+  // ฟิโบธรรมดา
+  if (!isFinishedDraw || !tempLine) return;
+  const answer = steps[currentStep].answer;
+  if (isCorrect(tempLine, answer)) {
+    lines.push(tempLine);
+    tempLine = null;
+    currentStep++;
+    if (currentStep < steps.length) {
+      showStep();
+    } else {
+      questionDiv.textContent = "จบทุกข้อแล้ว! คุณเก่งมาก";
+      checkBtn.disabled = true;
+      removeBox.style.display = "none";
+    }
+    resultDiv.innerHTML = `<span style="color:#237b13;">ถูกต้อง! กรุณาทำขั้นตอนต่อไป</span>`;
+  } else {
+    resultDiv.innerHTML = `<span style="color:#c00;">ยังไม่ถูกต้อง ลองลากใหม่อีกครั้ง</span>`;
+  }
+};
+removeBtn.onclick = function() {
+  const idx = parseInt(fibIndexInput.value, 10) - 1;
+  const correctIdx = steps[currentStep].removeIndex;
+  if (isNaN(idx) || idx < 0 || idx >= lines.length) {
+    resultDiv.innerHTML = `<span style="color:#c00;">กรุณาใส่หมายเลขฟิโบที่ถูกต้อง</span>`;
+    return;
+  }
+  if (idx === correctIdx) {
+    lines.splice(idx, 1);   // เฉพาะ “ถูก” เท่านั้นที่ลบออก
+    redrawAll();
+    resultDiv.innerHTML = `<span style="color:#237b13;">ถูกต้อง! ลบฟิโบชุดนี้แล้ว ไปข้อต่อไป</span>`;
+    currentStep++;
+    showStep();
+  } else {
+    // ไม่ลบ, แค่แจ้งผิด
+    resultDiv.innerHTML = `<span style="color:#c00;">ยังไม่ถูก! ลบผิดเส้น ลองอีกครั้ง</span>`;
+  }
+};
+showStep();
 </script>
 </body>
 </html>
